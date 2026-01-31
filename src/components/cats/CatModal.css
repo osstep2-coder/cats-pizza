@@ -1,0 +1,52 @@
+.cat-modal__options-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cat-modal__options-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  font-size: 14px;
+}
+
+.cat-modal__extras {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+}
+
+.cat-modal__price {
+  margin: 4px 0 0;
+  font-size: 14px;
+}
+
+.cat-modal__price strong {
+  font-size: 16px;
+}
+
+.cat-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.cat-modal__footer button {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.cat-modal__footer button:first-of-type {
+  background-color: #e5e7eb;
+}
+
+.cat-modal__footer button:last-of-type {
+  background-color: #111827;
+  color: #f9fafb;
+}

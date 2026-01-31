@@ -1,0 +1,18 @@
+.app-root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-main {
+  flex: 1;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+body.with-cart-drawer .app-main {
+  max-width: 960px;
+  margin-left: auto;
+  margin-right: 360px; /* ширина дровера */
+}

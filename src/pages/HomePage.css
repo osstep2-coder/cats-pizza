@@ -1,0 +1,17 @@
+.home-page {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.home-page__header {
+  text-align: center;
+}
+
+.home-page__header h1 {
+  margin-bottom: 4px;
+}
+
+.home-page__header p {
+  margin-top: 0;
+  color: #4b5563;
+}

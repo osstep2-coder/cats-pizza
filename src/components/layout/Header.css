@@ -1,0 +1,80 @@
+.app-header {
+  border-bottom: 1px solid #e5e5e5;
+  background-color: #ffffff;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.app-header__inner {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+body.with-cart-drawer .app-header__inner {
+  max-width: 960px;
+  margin-left: auto;
+  margin-right: 360px; /* ширина дровера */
+}
+
+.logo {
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+}
+
+.logo__title {
+  font-weight: 700;
+}
+
+.logo__subtitle {
+  font-size: 12px;
+  color: #777;
+}
+
+.nav {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.nav__link {
+  text-decoration: none;
+  color: #333;
+}
+
+.nav__link--active {
+  font-weight: 600;
+}
+
+.nav__cart-button {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  padding: 4px 10px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.nav__cart-button--active {
+  background-color: #f97316;
+  color: #ffffff;
+}
+
+.auth__link {
+  text-decoration: none;
+  color: #111827;
+  cursor: pointer;
+}
+
+.auth__link--active {
+  font-weight: 600;
+}
