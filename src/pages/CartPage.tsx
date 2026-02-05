@@ -94,6 +94,7 @@ export function CartPage() {
               </button>
               <button
                 type="button"
+                data-testid="makeOrderButton"
                 className="cart-summary__order"
                 onClick={handleOrderClick}
                 disabled={state.items.length === 0}>
