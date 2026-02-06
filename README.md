@@ -104,7 +104,7 @@ Backend (Express):
 
 ```bash
 npm run dev:server
-# http://localhost:3000
+# по умолчанию http://localhost:3001
 ```
 
 Оба сервера одновременно (удобно для разработки):
@@ -130,6 +130,7 @@ npm run preview
 - `GET /api/cats` — список котиков
 - `POST /api/register` — регистрация пользователя
 - `POST /api/login` — логин, возвращает `token` и `user`
+- `DELETE /api/users/by-email` — удалить пользователя по email (тело запроса: `{ "email": string }`, ответ: `{ deletedUsersCount, deletedOrdersCount }`)
 - `GET /api/cart` — текущая корзина
 - `POST /api/cart/items` — добавить товар в корзину
 - `PATCH /api/cart/items/:id` — изменить количество
@@ -137,6 +138,7 @@ npm run preview
 - `POST /api/cart/clear` — очистить корзину
 - `POST /api/orders` — создать заказ (из тела запроса или текущей корзины)
 - `GET /api/orders` — получить заказы текущего пользователя или гостя
+- `DELETE /api/orders/by-email` — удалить все заказы пользователя по email (тело запроса: `{ "email": string }`, ответ: `{ deletedCount }`)
 
 Авторизация реализована через простой токен в заголовке `Authorization: Bearer <token>`. Токен хранится в `localStorage` на фронтенде.
 
