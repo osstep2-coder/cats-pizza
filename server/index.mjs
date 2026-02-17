@@ -1,7 +1,9 @@
 import express from 'express';
-import { readFile, writeFile } from 'fs/promises';
+import { readFile } from 'fs/promises';
 import { existsSync, mkdirSync } from 'fs';
 import path from 'path';
+import { Low } from 'lowdb';
+import { JSONFile } from 'lowdb/node';
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -10,7 +12,7 @@ app.use(express.json());
 
 // В реальном приложении здесь могла бы быть БД.
 // Пока что отдаем статический список котопицц и храним все в памяти.
-const cats = [
+const initialCats = [
   {
     id: 'cat-1',
     name: 'Маргарита',
@@ -81,46 +83,72 @@ const tokens = new Map(); // token -> userId
 
 // Пользователи с простой файловой персистентностью
 const DATA_DIR = path.join(process.cwd(), 'server-data');
+const DB_FILE = path.join(DATA_DIR, 'db.json');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 
 // Директория с изображениями котопицц
 const IMAGES_DIR = path.join(process.cwd(), 'pizza-images');
 
-let users = [];
+const adapter = new JSONFile(DB_FILE);
+const db = new Low(adapter, { cats: [], users: [], orders: [] });
 
-const loadUsersFromFile = async () => {
-  try {
-    if (!existsSync(DATA_DIR)) {
-      mkdirSync(DATA_DIR, { recursive: true });
-    }
-
-    if (!existsSync(USERS_FILE)) {
-      users = [];
-      await writeFile(USERS_FILE, JSON.stringify(users, null, 2), 'utf8');
-      return;
-    }
-
-    const raw = await readFile(USERS_FILE, 'utf8');
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) {
-      users = parsed;
-    } else {
-      users = [];
-    }
-  } catch (err) {
-    console.error('Failed to load users from file:', err);
-    users = [];
+const readDb = async () => {
+  await db.read();
+  if (!db.data) {
+    db.data = { cats: [], users: [], orders: [] };
   }
 };
 
-const saveUsersToFile = async () => {
+const writeDb = async () => {
+  await db.write();
+};
+
+const parseNumericSuffix = (value, prefix) => {
+  if (typeof value !== 'string' || !value.startsWith(prefix)) return null;
+  const raw = value.slice(prefix.length);
+  const num = Number.parseInt(raw, 10);
+  return Number.isFinite(num) ? num : null;
+};
+
+const nextId = (prefix, items) => {
+  const max = (Array.isArray(items) ? items : []).reduce((acc, item) => {
+    const n = parseNumericSuffix(item?.id, prefix);
+    return n !== null && n > acc ? n : acc;
+  }, 0);
+  return `${prefix}${max + 1}`;
+};
+
+const initDb = async () => {
   try {
     if (!existsSync(DATA_DIR)) {
       mkdirSync(DATA_DIR, { recursive: true });
     }
-    await writeFile(USERS_FILE, JSON.stringify(users, null, 2), 'utf8');
+
+    await readDb();
+
+    if (!Array.isArray(db.data.cats)) db.data.cats = [];
+    if (!Array.isArray(db.data.users)) db.data.users = [];
+    if (!Array.isArray(db.data.orders)) db.data.orders = [];
+
+    if (db.data.users.length === 0 && existsSync(USERS_FILE)) {
+      try {
+        const raw = await readFile(USERS_FILE, 'utf8');
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          db.data.users = parsed;
+        }
+      } catch (err) {
+        console.error('Failed to migrate users.json to db.json:', err);
+      }
+    }
+
+    if (db.data.cats.length === 0) {
+      db.data.cats = initialCats;
+    }
+
+    await writeDb();
   } catch (err) {
-    console.error('Failed to save users to file:', err);
+    console.error('Failed to init db:', err);
   }
 };
 
@@ -183,8 +211,9 @@ const setOrdersForReq = (req, newOrders) => {
   }
 };
 
-app.get('/api/cats', (_req, res) => {
-  res.json(cats);
+app.get('/api/cats', async (_req, res) => {
+  await readDb();
+  res.json(db.data.cats);
 });
 
 // Регистрация и авторизация (очень упрощенная)
@@ -196,21 +225,22 @@ app.post('/api/register', async (req, res) => {
     return res.status(400).json({ message: 'Необходимо указать имя, email и пароль' });
   }
 
-  const existing = users.find((u) => u.email === email);
+  await readDb();
+
+  const existing = db.data.users.find((u) => u.email === email);
   if (existing) {
     return res.status(400).json({ message: 'Пользователь с таким email уже существует' });
   }
 
   const user = {
-    id: `user-${users.length + 1}`,
+    id: nextId('user-', db.data.users),
     name,
     email,
     password,
   };
 
-  users.push(user);
-
-  await saveUsersToFile();
+  db.data.users.push(user);
+  await writeDb();
 
   return res.status(201).json({ id: user.id, name: user.name, email: user.email });
 });
@@ -222,12 +252,9 @@ app.post('/api/login', async (req, res) => {
     return res.status(400).json({ message: 'Необходимо указать email и пароль' });
   }
 
-  // На всякий случай убеждаемся, что пользователи загружены
-  if (!users || users.length === 0) {
-    await loadUsersFromFile();
-  }
+  await readDb();
 
-  const user = users.find((u) => u.email === email && u.password === password);
+  const user = db.data.users.find((u) => u.email === email && u.password === password);
 
   if (!user) {
     return res.status(401).json({ message: 'Неверный email или пароль' });
@@ -252,6 +279,42 @@ app.post('/api/login', async (req, res) => {
       email: user.email,
     },
   });
+});
+
+app.delete('/api/users/by-email', async (req, res) => {
+  const { email } = req.body || {};
+
+  if (!email) {
+    return res.status(400).json({ message: 'Необходимо указать email' });
+  }
+
+  await readDb();
+
+  const user = db.data.users.find((u) => u.email === email);
+  if (!user) {
+    return res.status(404).json({ message: 'Пользователь не найден' });
+  }
+
+  const beforeUsersCount = db.data.users.length;
+  db.data.users = db.data.users.filter((u) => u.id !== user.id);
+  const deletedUsersCount = beforeUsersCount - db.data.users.length;
+
+  const beforeOrdersCount = db.data.orders.length;
+  db.data.orders = db.data.orders.filter((o) => o.userId !== user.id);
+  const deletedOrdersCount = beforeOrdersCount - db.data.orders.length;
+
+  await writeDb();
+
+  cartsByUser.delete(user.id);
+  ordersByUser.delete(user.id);
+
+  for (const [token, userId] of tokens.entries()) {
+    if (userId === user.id) {
+      tokens.delete(token);
+    }
+  }
+
+  return res.json({ deletedUsersCount, deletedOrdersCount });
 });
 
 // Корзина
@@ -342,30 +405,64 @@ app.post('/api/orders', (req, res) => {
     0,
   );
 
-  const { orders } = getOrdersForReq(req);
+  (async () => {
+    await readDb();
 
-  const order = {
-    id: `order-${orders.length + 1}`,
-    items: orderItems,
-    totalPrice,
-    customer: customer || null,
-    createdAt: new Date().toISOString(),
-  };
+    const userId = getUserIdFromRequest(req);
 
-  const updatedOrders = [...orders, order];
-  setOrdersForReq(req, updatedOrders);
-  setCartForReq(req, []);
+    const order = {
+      id: nextId('order-', db.data.orders),
+      userId: userId ?? null,
+      items: orderItems,
+      totalPrice,
+      customer: customer || null,
+      createdAt: new Date().toISOString(),
+    };
 
-  res.status(201).json(order);
+    db.data.orders.push(order);
+    await writeDb();
+
+    setCartForReq(req, []);
+
+    res.status(201).json(order);
+  })().catch((err) => {
+    console.error('Failed to create order:', err);
+    res.status(500).json({ message: 'Не удалось создать заказ' });
+  });
 });
 
-app.get('/api/orders', (req, res) => {
-  const { orders } = getOrdersForReq(req);
+app.get('/api/orders', async (req, res) => {
+  await readDb();
+  const userId = getUserIdFromRequest(req);
+  const orders = db.data.orders.filter((o) => (userId ? o.userId === userId : o.userId == null));
   res.json({ orders });
 });
 
-// Перед стартом сервера подгружаем пользователей из файла
-loadUsersFromFile().finally(() => {
+app.delete('/api/orders/by-email', async (req, res) => {
+  const { email } = req.body || {};
+
+  if (!email) {
+    return res.status(400).json({ message: 'Необходимо указать email' });
+  }
+
+  await readDb();
+
+  const user = db.data.users.find((u) => u.email === email);
+  if (!user) {
+    return res.status(404).json({ message: 'Пользователь не найден' });
+  }
+
+  const beforeCount = db.data.orders.length;
+  db.data.orders = db.data.orders.filter((o) => o.userId !== user.id);
+  const deletedCount = beforeCount - db.data.orders.length;
+
+  await writeDb();
+
+  return res.json({ deletedCount });
+});
+
+// Перед стартом сервера инициализируем БД
+initDb().finally(() => {
   app.listen(port, () => {
     console.log(`Cat pizza backend listening on http://localhost:${port}`);
   });
