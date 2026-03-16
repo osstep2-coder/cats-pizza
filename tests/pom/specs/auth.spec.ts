@@ -1,5 +1,5 @@
 import { test } from '../../fixtures/app.fixture';
-import { CleaupApi } from '../api/CleanupApi';
+import { CleanupApi } from '../api/CleanupApi';
 import { testUsers } from '../data/testData';
 
 test.describe('Auth', () => {
@@ -8,7 +8,7 @@ test.describe('Auth', () => {
   test.afterAll(async ({ request }) => {
     if (!createdUserEmail) return;
 
-    const cleanupApi = new CleaupApi(request);
+    const cleanupApi = new CleanupApi(request);
     await cleanupApi.deleteUserByEmail(createdUserEmail);
 
     createdUserEmail = null;
