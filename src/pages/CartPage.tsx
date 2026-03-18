@@ -49,6 +49,7 @@ export function CartPage() {
                         −
                       </button>
                       <input
+                        data-testid="itemCounter"
                         type="number"
                         min={1}
                         value={item.quantity}
