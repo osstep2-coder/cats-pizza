@@ -19,8 +19,8 @@
   - Express
 - **Прочее**
   - ESLint (настройки для React/TS)
-  - Хранение пользователей в `server-data/users.json`
-  - In‑memory корзина и заказы (в памяти процесса сервера)
+  - `lowdb` для локальной персистентности backend-состояния в `server-data/db.json`
+  - Гостевая сессия в `HttpOnly` cookie, токены и корзины в persistent storage
 
 ## Возможности приложения
 
@@ -33,6 +33,7 @@
   - Поддержка гостей и авторизованных пользователей
   - Изменение количества, удаление товара, очистка корзины
   - Синхронизация с backend `/api/cart`, `/api/cart/items`, `/api/cart/clear`
+  - Изоляция гостевой корзины по cookie-сессии вместо общей памяти процесса
 
 - **Оформление заказа**
   - Страница `CheckoutPage` и модальное окно `CheckoutModal`
@@ -46,6 +47,7 @@
   - Логин `/api/login`
   - Хранение токена и пользователя в `localStorage` (`AuthContext`)
   - Перенос гостевой корзины в корзину пользователя при логине
+  - Токены backend-сессии сохраняются в `server-data/db.json`, поэтому не теряются при рестарте сервера
 
 - **История заказов**
   - Страница `OrdersPage`
@@ -57,9 +59,11 @@
 ```text
 web-pizza/
   server/
-    index.mjs           # Express-сервер, API для котиков, корзины, заказов и auth
+    app.mjs             # createApp(...) и lowdb-backed storage для API
+    index.mjs           # Bootstrap сервера и запуск app.listen(...)
   server-data/
-    users.json          # Файл с пользователями (создаётся/обновляется сервером)
+    db.json             # lowdb-хранилище cats/users/sessions/carts/orders
+    users.json          # Legacy-источник для миграции пользователей в db.json
   pizza-images/         # Картинки котиков, раздаются как статика /static
   src/
     auth/
@@ -140,7 +144,7 @@ npm run preview
 - `GET /api/orders` — получить заказы текущего пользователя или гостя
 - `DELETE /api/orders/by-email` — удалить все заказы пользователя по email (тело запроса: `{ "email": string }`, ответ: `{ deletedCount }`)
 
-Авторизация реализована через простой токен в заголовке `Authorization: Bearer <token>`. Токен хранится в `localStorage` на фронтенде.
+Авторизация реализована через токен в заголовке `Authorization: Bearer <token>`. Токен хранится в `localStorage` на фронтенде, а серверная сессия и данные корзины/заказов сохраняются в `server-data/db.json`. Для гостя backend создаёт `HttpOnly` cookie `guestSessionId`, чтобы корзина и история заказов были изолированы между браузерами и тестами.
 
 ## Разработка
 
