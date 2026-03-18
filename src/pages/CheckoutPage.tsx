@@ -102,7 +102,7 @@ export function CheckoutPage() {
         </p>
       )}
 
-      <form onSubmit={handleSubmit} className="page-card__form">
+      <form onSubmit={handleSubmit} className="page-card__form" noValidate>
         <div className="page-card__field">
           <label>
             <span>Город*:</span>

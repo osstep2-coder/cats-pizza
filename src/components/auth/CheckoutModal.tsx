@@ -100,7 +100,7 @@ export function CheckoutModal({ isOpen, onClose }: CheckoutModalProps) {
           </button>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="page-card__form">
+        <form onSubmit={handleSubmit} className="page-card__form" noValidate>
           <p className="page-intro">
             Котиков в заказе: <strong>{state.items.length}</strong>, сумма:{' '}
             <strong>{total.toFixed(2)} ₽</strong>
