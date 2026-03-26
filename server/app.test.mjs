@@ -94,6 +94,28 @@ test('guest carts are isolated by guest session cookie', async () => {
   }
 });
 
+test('empty db is initialized from committed users seed', async () => {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), 'web-pizza-seed-'));
+  const imagesDir = path.join(tempDir, 'pizza-images');
+
+  try {
+    await mkdir(imagesDir, { recursive: true });
+
+    const store = createJsonDataStore({ dataDir: tempDir, imagesDir });
+    await store.init();
+
+    const user = await store.findUserByEmail('test@test.ru');
+    assert.deepEqual(user, {
+      id: 'user-1',
+      name: 'Test User',
+      email: 'test@test.ru',
+      password: 'Qwerty',
+    });
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
+});
+
 test('auth sessions and carts survive server restart with the same data dir', async () => {
   const tempDir = await mkdtemp(path.join(os.tmpdir(), 'web-pizza-session-'));
   const email = 'restart@example.com';

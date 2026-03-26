@@ -180,7 +180,7 @@ const appendSetCookieHeader = (res, cookie) => {
 export const createJsonDataStore = ({
   dataDir = path.join(process.cwd(), 'server-data'),
   dbFile = path.join(dataDir, 'db.json'),
-  usersFile = path.join(dataDir, 'users.json'),
+  usersSeedFile = path.join(process.cwd(), 'server', 'seeds', 'users.json'),
   imagesDir = path.join(process.cwd(), 'pizza-images'),
 } = {}) => {
   const adapter = new JSONFile(dbFile);
@@ -248,15 +248,15 @@ export const createJsonDataStore = ({
 
         await loadDb();
 
-        if (db.data.users.length === 0 && existsSync(usersFile)) {
+        if (db.data.users.length === 0 && existsSync(usersSeedFile)) {
           try {
-            const raw = await readFile(usersFile, 'utf8');
+            const raw = await readFile(usersSeedFile, 'utf8');
             const parsed = JSON.parse(raw);
             if (Array.isArray(parsed)) {
               db.data.users = parsed;
             }
           } catch (err) {
-            console.error('Failed to migrate users.json to db.json:', err);
+            console.error('Failed to load users seed into db.json:', err);
           }
         }
 

@@ -61,9 +61,11 @@ web-pizza/
   server/
     app.mjs             # createApp(...) и lowdb-backed storage для API
     index.mjs           # Bootstrap сервера и запуск app.listen(...)
+    seeds/
+      users.json        # Коммитимый seed пользователей для пустой db.json
   server-data/
     db.json             # lowdb-хранилище cats/users/sessions/carts/orders
-    users.json          # Legacy-источник для миграции пользователей в db.json
+    users.json          # Локальный runtime-файл, не используется как seed в CI
   pizza-images/         # Картинки котиков, раздаются как статика /static
   src/
     auth/
