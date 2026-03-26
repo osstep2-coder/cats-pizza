@@ -1,5 +1,5 @@
 import { expect, Page } from '@playwright/test';
-import { CartApi } from '../api/mockApi/cartApi';
+import { CartApi } from '../api/mockApi/CartApi';
 
 export class CartPage {
   constructor(private page: Page) {
